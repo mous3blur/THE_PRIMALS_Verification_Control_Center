@@ -1,0 +1,8 @@
+import express from 'express';import cors from 'cors';import nacl from 'tweetnacl';import bs58 from 'bs58';
+import {cfg} from './config.js';import {createSession,getSession,consume} from './store.js';import {assertWallet,countCollectionNfts} from './solana.js';import {rolesFor,Mode} from './tiers.js';
+const app=express();app.use(cors({origin:cfg.web}));app.use(express.json());
+app.get('/health',(_,res)=>res.json({ok:true}));
+app.post('/session',(req,res)=>{const {discordUserId}=req.body||{};if(!discordUserId)return res.status(400).json({error:'discordUserId required'});const s=createSession(discordUserId,cfg.ttl);res.json({sessionId:s.id,nonce:s.nonce,expires:s.expires})});
+app.get('/session/:id',(req,res)=>{const s=getSession(req.params.id);if(!s)return res.sendStatus(404);res.json({nonce:s.nonce,expires:s.expires,used:s.used})});
+app.post('/verify',async(req,res)=>{try{const {sessionId,wallet,signature,mode='STACKING'}=req.body||{};const s=getSession(sessionId);if(!s||s.used||s.expires<Date.now())return res.status(400).json({error:'Invalid or expired session'});assertWallet(wallet);const message=new TextEncoder().encode(`THE PRIMALS VERIFICATION\nSession: ${s.id}\nNonce: ${s.nonce}`);const ok=nacl.sign.detached.verify(message,bs58.decode(signature),bs58.decode(wallet));if(!ok)return res.status(401).json({error:'Invalid signature'});const count=await countCollectionNfts(wallet);const roles=rolesFor(count,mode as Mode);consume(s.id);res.json({verified:true,discordUserId:s.discordUserId,wallet,count,roles});}catch(e:any){res.status(400).json({error:e.message||'Verification failed'})}});
+app.listen(cfg.port,()=>console.log(`API listening on ${cfg.port}`));
