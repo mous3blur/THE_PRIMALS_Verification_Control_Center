@@ -3,5 +3,5 @@ services:
     image: node:22
     working_dir: /app
     volumes: [".:/app"]
-    command: sh -c "npm install && npm run dev -w @primals/api"
+    command: sh -c "npm install && npm run dev -w @project/api"
     ports: ["3001:3001"]
