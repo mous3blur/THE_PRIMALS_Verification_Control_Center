@@ -1,4 +1,4 @@
-# THE PRIMALS — Verification Control Center
+# THE PROJECT — Verification Control Center
 
 A ZIP-ready monorepo for Discord ↔ Solana NFT verification.
 
